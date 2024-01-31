@@ -1,0 +1,14 @@
+#Files to be ignored
+
+.idea
+.DS_Store
+/monopoly_simulator/__pycache__
+/monopoly_simulator/background_agent_v1.py
+/monopoly_simulator/background_agent_v1_deprecated.py
+/monopoly_simulator/background_agent_v2.py
+/monopoly_simulator/background_agent_v3.py
+/monopoly_simulator/background_agent_v3_1_deprecated.py
+/monopoly_simulator/player_deprecated.py
+/monopoly_simulator/baseline_agent.py
+/monopoly_simulator/simple_decision_agent_1.py
+/monopoly_simulator/hypothetical_simulator.py
