@@ -2,7 +2,9 @@ from monopoly_simulator import initialize_game_elements
 from monopoly_simulator.action_choices import roll_die
 import numpy as np
 from monopoly_simulator import card_utility_actions
-from monopoly_simulator import background_agent_v3_1
+# from monopoly_simulator import background_agent_v3_1
+from monopoly_simulator import background_agent_v3_1, background_agent_v3_1_cash_conservator
+from monopoly_simulator import background_agent_v3_1_action_novelty, background_agent_v3_1_sneaky_trader
 from monopoly_simulator import read_write_current_state
 import json
 from monopoly_simulator import novelty_generator
@@ -261,15 +263,15 @@ def simulate_game_instance(game_elements, history_log_file=None, np_seed=2):
 
     if winner:
         logger.debug('We have a winner: ' + winner.player_name)
-        return winner.player_name
+        return winner.player_name, tot_time
     else:
         winner = card_utility_actions.check_for_winner(game_elements)
         if winner is not None:
             logger.debug('We have a winner: ' + winner.player_name)
-            return winner.player_name
+            return winner.player_name, tot_time
         else:
             logger.debug('Game has no winner, do not know what went wrong!!!')
-            return None     # ideally should never get here
+            return None, tot_time     # ideally should never get here
 
 
 def set_up_board(game_schema_file_path, player_decision_agents):
@@ -342,7 +344,7 @@ def inject_novelty(current_gameboard, novelty_schema=None):
     '''
 
 
-def play_game():
+def play_game(tournament_folder='single_tournament', seed_val=2):
     """
     Use this function if you want to test a single game instance and control lots of things. For experiments, we will directly
     call some of the functions in gameplay from test_harness.py.
@@ -354,22 +356,28 @@ def play_game():
     """
 
     try:
-        os.makedirs('../single_tournament/')
+        os.makedirs(tournament_folder)
         print('Creating folder and logging gameplay.')
     except:
         print('Logging gameplay.')
 
-    logger = log_file_create('../single_tournament/seed_6.log')
+    logger = log_file_create(f'{tournament_folder}/seed_{seed_val}.log')
     player_decision_agents = dict()
     # for p in ['player_1','player_3']:
     #     player_decision_agents[p] = simple_decision_agent_1.decision_agent_methods
 
     player_decision_agents['player_1'] = Agent(**background_agent_v3_1.decision_agent_methods)
-    player_decision_agents['player_2'] = Agent(**background_agent_v3_1.decision_agent_methods)
-    player_decision_agents['player_3'] = Agent(**background_agent_v3_1.decision_agent_methods)
-    player_decision_agents['player_4'] = Agent(**background_agent_v3_1.decision_agent_methods)
+    # player_decision_agents['player_2'] = Agent(**background_agent_v3_1.decision_agent_methods)
+    # player_decision_agents['player_3'] = Agent(**background_agent_v3_1.decision_agent_methods)
+    # player_decision_agents['player_4'] = Agent(**background_agent_v3_1.decision_agent_methods)
 
-    game_elements = set_up_board('../monopoly_game_schema_v1-2.json',
+    player_decision_agents['player_2'] = Agent(**background_agent_v3_1_cash_conservator.decision_agent_methods)
+    player_decision_agents['player_3'] = Agent(**background_agent_v3_1_cash_conservator.decision_agent_methods)
+    player_decision_agents['player_4'] = Agent(**background_agent_v3_1_cash_conservator.decision_agent_methods)
+    # player_decision_agents['player_3'] = Agent(**background_agent_v3_1_sneaky_trader.decision_agent_methods)
+    # player_decision_agents['player_4'] = Agent(**background_agent_v3_1_action_novelty.decision_agent_methods)
+
+    game_elements = set_up_board('monopoly_game_schema_v1-2.json',
                                  player_decision_agents)
 
     #Comment out the above line and uncomment the piece of code to read the gameboard state from an existing json file so that
@@ -391,7 +399,7 @@ def play_game():
         return None
     else:
         logger.debug("Sucessfully initialized all player agents.")
-        winner = simulate_game_instance(game_elements)
+        winner, tot_time = simulate_game_instance(game_elements=game_elements, np_seed=seed_val)
         if player_decision_agents['player_1'].shutdown() == flag_config_dict['failure_code'] or \
             player_decision_agents['player_2'].shutdown() == flag_config_dict['failure_code'] or \
             player_decision_agents['player_3'].shutdown() == flag_config_dict['failure_code'] or \
@@ -402,7 +410,7 @@ def play_game():
                 logger.removeHandler(handler)
                 handler.close()
                 handler.flush()
-            return None
+            return None, tot_time
         else:
             logger.debug("All player agents have been shutdown. ")
             logger.debug("GAME OVER")
@@ -411,7 +419,7 @@ def play_game():
                 logger.removeHandler(handler)
                 handler.close()
                 handler.flush()
-            return winner
+            return winner, tot_time
 
 
 def play_game_in_tournament(game_seed, novelty_info=False, inject_novelty_function=None):
